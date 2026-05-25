@@ -19,6 +19,11 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
+    - name: Download Gradle wrapper
+      run: |
+        mkdir -p gradle/wrapper
+        curl -L -o gradle/wrapper/gradle-wrapper.jar https://repo1.maven.org/maven2/org/gradle/wrapper/gradle-wrapper/8.2/gradle-wrapper-8.2.jar
+
     - name: Create signing key
       run: |
         keytool -genkey -v -keystore app/release-key.jks -storepass ${{ secrets.KEY_STORE_PASSWORD }} -alias ${{ secrets.KEY_ALIAS }} -keypass ${{ secrets.KEY_PASSWORD }} -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sms2Note, OU=Development, O=Example, L=Beijing, ST=Beijing, C=CN"
