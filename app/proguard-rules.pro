@@ -1,0 +1,2 @@
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends androidx.appcompat.app.AppCompatActivity
