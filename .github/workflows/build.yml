@@ -27,12 +27,12 @@ jobs:
 
     - name: Create signing key
       run: |
-        keytool -genkey -v -keystore app/release-key.jks -storepass ${{ secrets.KEY_STORE_PASSWORD }} -alias ${{ secrets.KEY_ALIAS }} -keypass ${{ secrets.KEY_PASSWORD }} -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sms2Note, OU=Development, O=Example, L=Beijing, ST=Beijing, C=CN"
+        keytool -genkey -v -keystore release-key.jks -storepass ${{ secrets.KEY_STORE_PASSWORD }} -alias ${{ secrets.KEY_ALIAS }} -keypass ${{ secrets.KEY_PASSWORD }} -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sms2Note, OU=Development, O=Example, L=Beijing, ST=Beijing, C=CN"
 
     - name: Build with Gradle
       run: gradle assembleRelease
       env:
-        KEY_STORE_PATH: app/release-key.jks
+        KEY_STORE_PATH: release-key.jks
         KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
