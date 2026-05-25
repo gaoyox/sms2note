@@ -19,20 +19,18 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
 
-    - name: Download Gradle wrapper
+    - name: Download Gradle 8.2
       run: |
-        mkdir -p gradle/wrapper
-        curl -L -o gradle/wrapper/gradle-wrapper.jar https://repo1.maven.org/maven2/org/gradle/wrapper/gradle-wrapper/8.2/gradle-wrapper-8.2.jar
+        wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
+        unzip -q /tmp/gradle.zip -d /opt
+        ln -s /opt/gradle-8.2/bin/gradle /usr/local/bin/gradle
 
     - name: Create signing key
       run: |
         keytool -genkey -v -keystore app/release-key.jks -storepass ${{ secrets.KEY_STORE_PASSWORD }} -alias ${{ secrets.KEY_ALIAS }} -keypass ${{ secrets.KEY_PASSWORD }} -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sms2Note, OU=Development, O=Example, L=Beijing, ST=Beijing, C=CN"
 
-    - name: Make gradlew executable
-      run: chmod +x gradlew
-
     - name: Build with Gradle
-      run: ./gradlew assembleRelease
+      run: gradle assembleRelease
       env:
         KEY_STORE_PATH: app/release-key.jks
         KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
