@@ -3,21 +3,23 @@ package com.example.sms2note;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class SmsReceiver extends BroadcastReceiver {
 
     private static final String TAG = "SmsReceiver";
+    
+    private static final Pattern VERIFICATION_CODE_PATTERN = Pattern.compile(
+        "(验证码|验证|code|Code|CODE|短信验证|校验码|动态码|OTP|token|Token|TOKEN)",
+        Pattern.CASE_INSENSITIVE
+    );
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -32,23 +34,32 @@ public class SmsReceiver extends BroadcastReceiver {
                         String content = smsMessage.getMessageBody();
                         long timestamp = smsMessage.getTimestampMillis();
                         
-                        saveToMiNotes(context, sender, content, timestamp);
+                        if (isVerificationCode(content)) {
+                            saveToMiNotes(context, sender, content, timestamp);
+                        }
                     }
                 }
             }
         }
     }
 
+    private boolean isVerificationCode(String content) {
+        if (content == null) {
+            return false;
+        }
+        return VERIFICATION_CODE_PATTERN.matcher(content).find();
+    }
+
     private void saveToMiNotes(Context context, String sender, String content, long timestamp) {
         try {
-            String title = "短信 - " + (sender != null ? sender : "未知");
+            String title = "验证码 - " + (sender != null ? sender : "未知");
             
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             String timeStr = sdf.format(new Date(timestamp));
             
             String noteContent = "时间：" + timeStr + "\n\n" + content;
 
-            Uri uri = Uri.parse("content://com.miui.notes.provider/notes");
+            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes.provider/notes");
             android.content.ContentValues values = new android.content.ContentValues();
             values.put("title", title);
             values.put("content", noteContent);
@@ -57,9 +68,9 @@ public class SmsReceiver extends BroadcastReceiver {
             values.put("modified_time", System.currentTimeMillis());
 
             try {
-                Uri result = context.getContentResolver().insert(uri, values);
+                android.net.Uri result = context.getContentResolver().insert(uri, values);
                 if (result != null) {
-                    Log.d(TAG, "Note saved successfully");
+                    Log.d(TAG, "Verification code saved to MIUI Notes");
                 } else {
                     Log.e(TAG, "Failed to save note");
                 }
@@ -67,7 +78,7 @@ public class SmsReceiver extends BroadcastReceiver {
                 Log.e(TAG, "Error saving to MIUI Notes: " + e.getMessage());
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error processing SMS: " + e.getMessage());
+            Log.e(TAG, "Error processing verification code: " + e.getMessage());
         }
     }
 }
