@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private SmsReceiver smsReceiver;
     private SharedPreferences sharedPreferences;
     private TextView tvLog;
+    private TextView tvVersion;
     private ScrollView scrollView;
     private BroadcastReceiver logReceiver;
 
@@ -38,12 +39,14 @@ public class MainActivity extends AppCompatActivity {
 
         switchEnable = findViewById(R.id.switch_enable);
         tvLog = findViewById(R.id.tv_log);
+        tvVersion = findViewById(R.id.tv_version);
         scrollView = findViewById(R.id.scroll_view);
         sharedPreferences = getSharedPreferences("Sms2Note", MODE_PRIVATE);
         boolean isEnabled = sharedPreferences.getBoolean("enabled", false);
         switchEnable.setChecked(isEnabled);
 
-        addLog("程序启动");
+        tvVersion.setText("v" + getVersionName());
+        addLog("程序启动 v" + getVersionName());
 
         switchEnable.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -179,5 +182,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         addLog("程序退出");
+    }
+
+    private String getVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return "1.0";
+        }
     }
 }
