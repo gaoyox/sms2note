@@ -1,0 +1,33 @@
+1）权限（AndroidManifest.xml）
+xml
+<!-- 接收短信 -->
+<uses-permission android:name="android.permission.RECEIVE_SMS" />
+<!-- 写入小米笔记（MIUI 私有权限） -->
+<uses-permission android:name="com.miui.notes.permission.READ_WRITE_NOTES" />
+
+2）监听短信（BroadcastReceiver）
+java
+运行
+public class SmsReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if ("android.provider.Telephony.SMS_RECEIVED".equals(intent.getAction())) {
+            // 解析短信：发件人、内容
+            // ...
+            // 然后调用写入小米笔记的方法
+            insertToMiuiNotes(context, sender, body);
+        }
+    }
+}
+3）写入小米笔记（核心，就几行）
+java
+运行
+void insertToMiuiNotes(Context context, String title, String content) {
+    ContentValues cv = new ContentValues();
+    cv.put("title", title);
+    cv.put("content", content);
+    cv.put("created_time", System.currentTimeMillis());
+
+    Uri uri = Uri.parse("content://com.miui.notes/note");
+    context.getContentResolver().insert(uri, cv);
+}
