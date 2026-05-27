@@ -21,7 +21,7 @@
         android:id="@+id/tv_version"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="v1.0.13"
+        android:text="v1.0.16"
         android:textSize="14sp"
         android:textColor="@android:color/darker_gray"
         android:layout_marginBottom="20dp" />
@@ -48,15 +48,16 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@android:color/darker_gray"
-        android:padding="8dp">
+        android:background="@android:color/white"
+        android:padding="1dp">
 
         <TextView
             android:id="@+id/tv_log"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:textColor="@android:color/white"
+            android:textColor="@android:color/black"
+            android:background="@android:color/white"
             android:lineSpacingExtra="4dp" />
 
     </ScrollView>
