@@ -19,11 +19,22 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: Build Debug APK with Gradle
+      run: ./gradlew assembleDebug
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
+
     - name: Create signing key
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
         keytool -genkey -v -keystore release-key.jks -storepass ${{ secrets.KEY_STORE_PASSWORD }} -alias ${{ secrets.KEY_ALIAS }} -keypass ${{ secrets.KEY_PASSWORD }} -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Sms2Note, OU=Development, O=Example, L=Beijing, ST=Beijing, C=CN"
 
-    - name: Build with Gradle
+    - name: Build Release APK with Gradle
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: ./gradlew assembleRelease
       env:
         KEY_STORE_PATH: release-key.jks
@@ -31,7 +42,8 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    - name: Upload APK
+    - name: Upload Release APK
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       uses: actions/upload-artifact@v4
       with:
         name: app-release
