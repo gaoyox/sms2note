@@ -48,11 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@android:color/white"
-        android:padding="4dp"
-        android:outlineColor="@android:color/black"
-        android:outlineWidth="1dp"
-        android:elevation="2dp">
+        android:background="@drawable/border_black">
 
         <TextView
             android:id="@+id/tv_log"
