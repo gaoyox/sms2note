@@ -117,7 +117,22 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver();
         sharedPreferences.edit().putBoolean("enabled", true).apply();
         addLog("已启用短信转小米笔记");
+        writeToMiNotes("短信转小米笔记", "短信转小米笔记已启用\n\n日志内容:\n" + tvLog.getText().toString());
         Toast.makeText(this, "已启用短信转小米笔记", Toast.LENGTH_SHORT).show();
+    }
+
+    private void writeToMiNotes(String title, String content) {
+        try {
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("title", title);
+            values.put("content", content);
+            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
+            getContentResolver().insert(uri, values);
+            addLog("已写入小米笔记");
+        } catch (Exception e) {
+            e.printStackTrace();
+            addLog("写入小米笔记失败: " + e.getMessage());
+        }
     }
 
     private void disableSmsListener() {
