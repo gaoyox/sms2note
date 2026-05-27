@@ -24,6 +24,8 @@ build/
 .gradle/
 gradle-app.setting
 !gradle-wrapper.jar
+gradle-8.5/
+gradle-*.zip
 
 # Signing files
 *.jks
