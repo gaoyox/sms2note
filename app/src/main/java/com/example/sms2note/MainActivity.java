@@ -24,6 +24,15 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_SMS_PERMISSION = 100;
+    private static final int REQUEST_CODE_ALL_PERMISSIONS = 101;
+    
+    // 需要的权限列表
+    private static final String[] REQUIRED_PERMISSIONS = {
+            Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.INTERNET,
+            Manifest.permission.WAKE_LOCK
+    };
+    
     private Switch switchEnable;
     private SmsReceiver smsReceiver;
     private SharedPreferences sharedPreferences;
@@ -50,17 +59,17 @@ public class MainActivity extends AppCompatActivity {
 
         switchEnable.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
-                if (checkSmsPermission()) {
+                if (checkAllPermissions()) {
                     enableSmsListener();
                 } else {
-                    requestSmsPermission();
+                    requestAllPermissions();
                 }
             } else {
                 disableSmsListener();
             }
         });
 
-        if (isEnabled && checkSmsPermission()) {
+        if (isEnabled && checkAllPermissions()) {
             registerReceiver();
             addLog("已恢复监听状态");
         }
@@ -101,16 +110,34 @@ public class MainActivity extends AppCompatActivity {
         scrollView.post(() -> scrollView.scrollTo(0, 0));
     }
 
+    /**
+     * 检查所有必需权限
+     */
+    private boolean checkAllPermissions() {
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                addLog("权限未获取: " + permission);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 请求所有必需权限
+     */
+    private void requestAllPermissions() {
+        addLog("请求必需权限");
+        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_ALL_PERMISSIONS);
+    }
+
+    /**
+     * 检查单个短信权限（保持兼容性）
+     */
     private boolean checkSmsPermission() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
                 == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestSmsPermission() {
-        addLog("请求短信权限");
-        ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.RECEIVE_SMS},
-                REQUEST_CODE_SMS_PERMISSION);
     }
 
     private void enableSmsListener() {
@@ -122,43 +149,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 写入小米笔记（优先尝试静默方式，然后回退到分享方式）
+     * 写入小米笔记（优先静默广播，失败则回退到分享方式）
      */
     private void writeToMiNotes(String title, String content) {
-        // 先尝试ContentProvider方式（旧版MIUI）
-        boolean cpSuccess = tryContentProviderWrite(title, content);
-        if (cpSuccess) {
-            addLog("✅ ContentProvider写入成功: " + title);
-            return;
-        }
-        
-        // 尝试静默广播方式
+        // 直接尝试静默广播方式（新版MIUI/澎湃OS）
         boolean broadcastSuccess = trySilentBroadcast(title, content);
         if (broadcastSuccess) {
-            addLog("✅ 静默广播发送成功: " + title);
+            addLog("✅ 已发送静默广播到小米笔记");
             return;
         }
         
         // 回退到分享方式
         addLog("⚠️ 静默方式失败，使用分享方式");
         tryShareWrite(title, content);
-    }
-
-    /**
-     * 尝试使用ContentProvider写入（旧版MIUI）
-     */
-    private boolean tryContentProviderWrite(String title, String content) {
-        try {
-            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put("title", title);
-            values.put("content", content);
-            android.net.Uri result = getContentResolver().insert(uri, values);
-            return result != null;
-        } catch (Exception e) {
-            addLog("ℹ️ ContentProvider不可用: " + e.getMessage());
-            return false;
-        }
     }
 
     /**

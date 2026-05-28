@@ -58,8 +58,8 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 写入小米笔记（优先静默方式）
-     * 静默方式适配：MIUI14/15、澎湃OS
+     * 写入小米笔记（使用静默广播方式）
+     * 适配：MIUI14/15、澎湃OS
      */
     private void saveToMiNotes(Context context, String sender, String content, long timestamp) {
         try {
@@ -70,8 +70,8 @@ public class SmsReceiver extends BroadcastReceiver {
             
             String noteContent = "时间：" + timeStr + "\n\n" + content;
 
-            // 尝试静默写入
-            trySilentWrite(context, title, noteContent);
+            // 使用静默广播写入
+            trySilentBroadcast(context, title, noteContent);
             
         } catch (Exception e) {
             log(context, "处理验证码异常: " + e.getMessage());
@@ -80,49 +80,24 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 尝试静默写入小米笔记
+     * 使用静默广播写入小米笔记
      */
-    private void trySilentWrite(Context context, String title, String content) {
+    private void trySilentBroadcast(Context context, String title, String content) {
         try {
-            // 方式1: 尝试使用ContentProvider（旧版MIUI）
-            boolean success = tryContentProviderWrite(context, title, content);
-            if (success) {
-                log(context, "✅ ContentProvider写入成功: " + title);
-                Log.d(TAG, "Note saved via ContentProvider");
-                return;
-            }
-            
-            // 方式2: 尝试静默广播（新版MIUI）
             Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
             intent.setPackage("com.miui.notes");
             intent.putExtra("title", title);
             intent.putExtra("content", content);
             intent.putExtra("silent", true);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             
             context.sendBroadcast(intent);
             log(context, "✅ 已发送静默广播到小米笔记: " + title);
             Log.d(TAG, "Silent broadcast sent to MIUI Notes");
             
         } catch (Exception e) {
-            log(context, "❌ 静默写入失败: " + e.getMessage());
-            Log.e(TAG, "Silent write failed: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 尝试使用ContentProvider写入（旧版MIUI兼容）
-     */
-    private boolean tryContentProviderWrite(Context context, String title, String content) {
-        try {
-            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put("title", title);
-            values.put("content", content);
-            android.net.Uri result = context.getContentResolver().insert(uri, values);
-            return result != null;
-        } catch (Exception e) {
-            Log.d(TAG, "ContentProvider not available, trying broadcast method");
-            return false;
+            log(context, "❌ 静默广播失败: " + e.getMessage());
+            Log.e(TAG, "Silent broadcast failed: " + e.getMessage());
         }
     }
 
