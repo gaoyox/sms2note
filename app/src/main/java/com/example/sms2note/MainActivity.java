@@ -213,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("content", content);
             intent.putExtra("silent", true);
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            intent.addFlags(Intent.FLAG_RECEIVER_INCLUDE_BACKGROUND);
             
             sendBroadcast(intent);
             return true;
