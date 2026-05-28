@@ -123,15 +123,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void writeToMiNotes(String title, String content) {
         try {
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put("title", title);
-            values.put("content", content);
-            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
-            getContentResolver().insert(uri, values);
-            addLog("已写入小米笔记");
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setPackage("com.miui.notes");
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TITLE, title);
+            intent.putExtra(Intent.EXTRA_TEXT, content);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            addLog("已分享到小米笔记");
         } catch (Exception e) {
             e.printStackTrace();
-            addLog("写入小米笔记失败: " + e.getMessage());
+            addLog("分享到小米笔记失败: " + e.getMessage());
         }
     }
 

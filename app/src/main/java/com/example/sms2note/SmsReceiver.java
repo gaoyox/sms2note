@@ -66,24 +66,19 @@ public class SmsReceiver extends BroadcastReceiver {
             
             String noteContent = "时间：" + timeStr + "\n\n" + content;
 
-            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put("title", title);
-            values.put("content", noteContent);
-            values.put("created_time", System.currentTimeMillis());
-
             try {
-                android.net.Uri result = context.getContentResolver().insert(uri, values);
-                if (result != null) {
-                    log(context, "写入小米笔记成功");
-                    Log.d(TAG, "Verification code saved to MIUI Notes");
-                } else {
-                    log(context, "写入小米笔记失败");
-                    Log.e(TAG, "Failed to save note");
-                }
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setPackage("com.miui.notes");
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TITLE, title);
+                intent.putExtra(Intent.EXTRA_TEXT, noteContent);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                log(context, "已分享到小米笔记");
+                Log.d(TAG, "Verification code shared to MIUI Notes");
             } catch (Exception e) {
-                log(context, "写入小米笔记异常: " + e.getMessage());
-                Log.e(TAG, "Error saving to MIUI Notes: " + e.getMessage());
+                log(context, "分享到小米笔记失败: " + e.getMessage());
+                Log.e(TAG, "Error sharing to MIUI Notes: " + e.getMessage());
             }
         } catch (Exception e) {
             log(context, "处理验证码异常: " + e.getMessage());
