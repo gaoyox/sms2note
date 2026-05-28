@@ -15,6 +15,16 @@ if (versionPropertiesFile.exists()) {
     versionProperties.load(new FileInputStream(versionPropertiesFile))
 }
 
+def getVersionCode() {
+    def code = versionProperties['versionCode']
+    return code ? code.toInteger() : 19
+}
+
+def getVersionName() {
+    def name = versionProperties['versionName']
+    return name ? name : "1.0.19"
+}
+
 android {
     namespace 'com.example.sms2note'
     compileSdk 34
@@ -35,8 +45,8 @@ android {
         applicationId "com.example.sms2note"
         minSdk 26
         targetSdk 34
-        versionCode (versionProperties['versionCode'] ?: '19') as int
-        versionName versionProperties['versionName'] ?: "1.0.19"
+        versionCode getVersionCode()
+        versionName getVersionName()
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
