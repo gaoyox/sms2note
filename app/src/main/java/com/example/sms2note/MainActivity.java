@@ -122,25 +122,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 后台静默写入小米笔记（有标题、不弹App、云同步、浏览器可见）
-     * 适配：MIUI14/15、澎湃OS
+     * 写入小米笔记（优先静默方式，失败则回退到分享方式）
+     * 静默方式适配：MIUI14/15、澎湃OS
      */
     private void writeToMiNotes(String title, String content) {
+        boolean silentSuccess = trySilentWrite(title, content);
+        if (!silentSuccess) {
+            addLog("⚠️ 静默写入失败，尝试分享方式");
+            tryShareWrite(title, content);
+        }
+    }
+
+    /**
+     * 尝试静默写入小米笔记
+     * @return 是否成功
+     */
+    private boolean trySilentWrite(String title, String content) {
         try {
             Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
             intent.setPackage("com.miui.notes");
             intent.putExtra("title", title);
             intent.putExtra("content", content);
             intent.putExtra("silent", true);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             
-            // 先尝试发送有序广播
-            sendOrderedBroadcast(intent, null);
-            addLog("✅ 已静默写入小米笔记: " + title);
+            // 使用sendBroadcast发送静默广播
+            sendBroadcast(intent);
+            addLog("✅ 已发送静默广播到小米笔记: " + title);
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
-            addLog("❌ 静默写入失败: " + e.getMessage());
+            addLog("❌ 静默广播失败: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 使用分享方式写入小米笔记（回退方案）
+     */
+    private void tryShareWrite(String title, String content) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setPackage("com.miui.notes");
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TITLE, title);
+            intent.putExtra(Intent.EXTRA_TEXT, content);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            addLog("✅ 已打开小米笔记分享界面");
+        } catch (Exception e) {
+            e.printStackTrace();
+            addLog("❌ 分享方式也失败: " + e.getMessage());
         }
     }
 
@@ -210,10 +241,14 @@ public class MainActivity extends AppCompatActivity {
 
     private String getVersionName() {
         try {
-            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            String version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            if (version == null || version.isEmpty()) {
+                return "1.0.20"; // 硬编码默认版本号
+            }
+            return version;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
-            return "1.0";
+            return "1.0.20";
         }
     }
 }
