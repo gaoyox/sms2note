@@ -189,29 +189,7 @@ public class MainActivity extends AppCompatActivity {
         if (success) {
             addLog("✅ 静默写入小米笔记成功: " + title);
         } else {
-            addLog("❌ 静默写入失败，尝试分享方式");
-            tryShareWrite(title, content);
-        }
-    }
-
-    /**
-     * 使用分享方式写入（回退方案）
-     */
-    private void tryShareWrite(String title, String content) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setPackage("com.miui.notes");
-            intent.setType("text/plain");
-            intent.putExtra("title", title);  // 使用小米笔记支持的key
-            intent.putExtra(Intent.EXTRA_SUBJECT, title);  // 备用key
-            intent.putExtra(Intent.EXTRA_TEXT, content);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            addLog("✅ 已打开小米笔记分享界面，请点击保存");
-        } catch (Exception e) {
-            e.printStackTrace();
-            addLog("❌ 打开小米笔记失败: " + e.getMessage());
-            Toast.makeText(this, "无法打开小米笔记，请检查是否已安装", Toast.LENGTH_LONG).show();
+            addLog("❌ 静默写入小米笔记失败");
         }
     }
 
