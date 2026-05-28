@@ -130,7 +130,39 @@ public class MainActivity extends AppCompatActivity {
     private void requestAllPermissions() {
         addLog("🔔 请求必需权限（短信、网络、后台）");
         Toast.makeText(this, "请授予短信权限以接收验证码", Toast.LENGTH_LONG).show();
-        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_ALL_PERMISSIONS);
+        
+        // 检查是否应该引导用户到应用设置
+        boolean shouldGoToSettings = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECEIVE_SMS);
+        if (shouldGoToSettings) {
+            // 用户之前拒绝过权限，引导到应用设置
+            showPermissionSettingsDialog();
+        } else {
+            // 首次请求权限
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_ALL_PERMISSIONS);
+        }
+    }
+
+    /**
+     * 显示权限设置对话框，引导用户到应用设置
+     */
+    private void showPermissionSettingsDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("需要权限");
+        builder.setMessage("本应用需要短信权限才能接收验证码并保存到小米笔记。请在设置中开启权限。");
+        builder.setPositiveButton("去设置", (dialog, which) -> {
+            // 跳转到应用设置页面
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            android.net.Uri uri = android.net.Uri.fromParts("package", getPackageName(), null);
+            intent.setData(uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            Toast.makeText(this, "请开启短信权限后返回", Toast.LENGTH_LONG).show();
+        });
+        builder.setNegativeButton("取消", (dialog, which) -> {
+            switchEnable.setChecked(false);
+            Toast.makeText(this, "未授予权限，功能已关闭", Toast.LENGTH_SHORT).show();
+        });
+        builder.show();
     }
 
     /**
@@ -150,14 +182,73 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 写入小米笔记（使用分享方式，最可靠）
+     * 写入小米笔记（优先静默方式，失败回退到分享方式）
      */
     private void writeToMiNotes(String title, String content) {
+        // 先尝试静默写入
+        boolean silentSuccess = trySilentWrite(title, content);
+        if (silentSuccess) {
+            addLog("✅ 静默写入小米笔记成功: " + title);
+            return;
+        }
+        
+        // 回退到分享方式
+        tryShareWrite(title, content);
+    }
+
+    /**
+     * 尝试静默写入小米笔记
+     */
+    private boolean trySilentWrite(String title, String content) {
+        try {
+            // 尝试使用ContentProvider
+            if (tryContentProviderWrite(title, content)) {
+                return true;
+            }
+            
+            // 尝试静默广播
+            Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
+            intent.setPackage("com.miui.notes");
+            intent.putExtra("title", title);
+            intent.putExtra("content", content);
+            intent.putExtra("silent", true);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            intent.addFlags(Intent.FLAG_RECEIVER_INCLUDE_BACKGROUND);
+            
+            sendBroadcast(intent);
+            return true;
+        } catch (Exception e) {
+            addLog("⚠️ 静默写入失败: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 尝试ContentProvider写入
+     */
+    private boolean tryContentProviderWrite(String title, String content) {
+        try {
+            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("title", title);
+            values.put("content", content);
+            android.net.Uri result = getContentResolver().insert(uri, values);
+            return result != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 使用分享方式写入（回退方案）
+     */
+    private void tryShareWrite(String title, String content) {
         try {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setPackage("com.miui.notes");
             intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TITLE, title);
+            intent.putExtra("title", title);  // 使用小米笔记支持的key
+            intent.putExtra(Intent.EXTRA_SUBJECT, title);  // 备用key
             intent.putExtra(Intent.EXTRA_TEXT, content);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
