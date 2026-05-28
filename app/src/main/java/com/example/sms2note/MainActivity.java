@@ -182,59 +182,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 写入小米笔记（优先静默方式，失败回退到分享方式）
+     * 写入小米笔记（使用静默ContentProvider方式）
      */
     private void writeToMiNotes(String title, String content) {
-        // 先尝试静默写入
-        boolean silentSuccess = trySilentWrite(title, content);
-        if (silentSuccess) {
+        boolean success = MiNoteSilent.createNote(this, title, content);
+        if (success) {
             addLog("✅ 静默写入小米笔记成功: " + title);
-            return;
-        }
-        
-        // 回退到分享方式
-        tryShareWrite(title, content);
-    }
-
-    /**
-     * 尝试静默写入小米笔记
-     */
-    private boolean trySilentWrite(String title, String content) {
-        try {
-            // 尝试使用ContentProvider
-            if (tryContentProviderWrite(title, content)) {
-                return true;
-            }
-            
-            // 尝试静默广播
-            Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
-            intent.setPackage("com.miui.notes");
-            intent.putExtra("title", title);
-            intent.putExtra("content", content);
-            intent.putExtra("silent", true);
-            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            
-            sendBroadcast(intent);
-            return true;
-        } catch (Exception e) {
-            addLog("⚠️ 静默写入失败: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * 尝试ContentProvider写入
-     */
-    private boolean tryContentProviderWrite(String title, String content) {
-        try {
-            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
-            android.content.ContentValues values = new android.content.ContentValues();
-            values.put("title", title);
-            values.put("content", content);
-            android.net.Uri result = getContentResolver().insert(uri, values);
-            return result != null;
-        } catch (Exception e) {
-            return false;
+        } else {
+            addLog("❌ 静默写入失败，尝试分享方式");
+            tryShareWrite(title, content);
         }
     }
 
@@ -327,12 +283,12 @@ public class MainActivity extends AppCompatActivity {
         try {
             String version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
             if (version == null || version.isEmpty()) {
-                return "1.0.20"; // 硬编码默认版本号
+                return "1.0.21"; // 硬编码默认版本号
             }
             return version;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
-            return "1.0.20";
+            return "1.0.21";
         }
     }
 }

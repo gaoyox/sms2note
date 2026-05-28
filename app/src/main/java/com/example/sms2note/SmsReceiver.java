@@ -58,7 +58,7 @@ public class SmsReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 写入小米笔记（使用静默广播方式）
+     * 写入小米笔记（使用静默ContentProvider方式）
      * 适配：MIUI14/15、澎湃OS
      */
     private void saveToMiNotes(Context context, String sender, String content, long timestamp) {
@@ -70,34 +70,19 @@ public class SmsReceiver extends BroadcastReceiver {
             
             String noteContent = "时间：" + timeStr + "\n\n" + content;
 
-            // 使用静默广播写入
-            trySilentBroadcast(context, title, noteContent);
+            // 使用静默ContentProvider写入
+            boolean success = MiNoteSilent.createNote(context, title, noteContent);
+            if (success) {
+                log(context, "✅ 静默写入小米笔记成功: " + title);
+                Log.d(TAG, "Note saved silently to MIUI Notes");
+            } else {
+                log(context, "❌ 静默写入小米笔记失败");
+                Log.e(TAG, "Failed to save note to MIUI Notes");
+            }
             
         } catch (Exception e) {
             log(context, "处理验证码异常: " + e.getMessage());
             Log.e(TAG, "Error processing verification code: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 使用静默广播写入小米笔记
-     */
-    private void trySilentBroadcast(Context context, String title, String content) {
-        try {
-            Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
-            intent.setPackage("com.miui.notes");
-            intent.putExtra("title", title);
-            intent.putExtra("content", content);
-            intent.putExtra("silent", true);
-            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            
-            context.sendBroadcast(intent);
-            log(context, "✅ 已发送静默广播到小米笔记: " + title);
-            Log.d(TAG, "Silent broadcast sent to MIUI Notes");
-            
-        } catch (Exception e) {
-            log(context, "❌ 静默广播失败: " + e.getMessage());
-            Log.e(TAG, "Silent broadcast failed: " + e.getMessage());
         }
     }
 
