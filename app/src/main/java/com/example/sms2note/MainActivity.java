@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -56,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
 
         tvVersion.setText("v" + getVersionName());
         addLog("程序启动 v" + getVersionName());
+
+        // 检查MIUI系统白名单权限
+        checkMiuiWhitelist();
 
         switchEnable.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
@@ -189,8 +193,48 @@ public class MainActivity extends AppCompatActivity {
         if (success) {
             addLog("✅ 静默写入小米笔记成功: " + title);
         } else {
-            addLog("❌ 静默写入小米笔记失败");
+            addLog("❌ 静默写入小米笔记失败，请检查权限");
         }
+    }
+
+    /**
+     * 检查MIUI系统白名单权限
+     */
+    private void checkMiuiWhitelist() {
+        if (!Settings.canDrawOverlays(this)) {
+            addLog("⚠️ 需要MIUI系统白名单权限");
+            showMiuiWhitelistDialog();
+        } else {
+            addLog("✅ MIUI系统白名单已获取");
+        }
+    }
+
+    /**
+     * 显示MIUI系统白名单对话框
+     */
+    private void showMiuiWhitelistDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("需要系统权限");
+        builder.setMessage("为了实现静默写入小米笔记，需要将本应用添加到MIUI系统白名单。请在设置中开启相关权限。");
+        builder.setPositiveButton("去设置", (dialog, which) -> {
+            try {
+                Intent intent = new Intent("miui.intent.action.APP_PERM_SETTINGS");
+                intent.setPackage("com.miui.securitycenter");
+                intent.putExtra("extra_pkgname", getPackageName());
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                Toast.makeText(this, "请开启后台运行权限后返回", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                // 如果MIUI设置页面打不开，跳转到应用信息页面
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                android.net.Uri uri = android.net.Uri.fromParts("package", getPackageName(), null);
+                intent.setData(uri);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        });
+        builder.setNegativeButton("稍后", null);
+        builder.show();
     }
 
     private void disableSmsListener() {
