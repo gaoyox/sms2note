@@ -8,22 +8,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-// 读取版本配置文件
-def versionProperties = new Properties()
-def versionPropertiesFile = file('version.properties')
-if (versionPropertiesFile.exists()) {
-    versionProperties.load(new FileInputStream(versionPropertiesFile))
-}
-
-def getVersionCode() {
-    def code = versionProperties['versionCode']
-    return code ? code.toInteger() : 19
-}
-
-def getVersionName() {
-    def name = versionProperties['versionName']
-    return name ? name : "1.0.19"
-}
+// 版本配置
+def versionCodeValue = 20
+def versionNameValue = "1.0.20"
 
 android {
     namespace 'com.example.sms2note'
@@ -45,8 +32,8 @@ android {
         applicationId "com.example.sms2note"
         minSdk 26
         targetSdk 34
-        versionCode getVersionCode()
-        versionName getVersionName()
+        versionCode versionCodeValue
+        versionName versionNameValue
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

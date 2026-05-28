@@ -122,35 +122,60 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 写入小米笔记（优先静默方式，失败则回退到分享方式）
-     * 静默方式适配：MIUI14/15、澎湃OS
+     * 写入小米笔记（优先尝试静默方式，然后回退到分享方式）
      */
     private void writeToMiNotes(String title, String content) {
-        boolean silentSuccess = trySilentWrite(title, content);
-        if (!silentSuccess) {
-            addLog("⚠️ 静默写入失败，尝试分享方式");
-            tryShareWrite(title, content);
+        // 先尝试ContentProvider方式（旧版MIUI）
+        boolean cpSuccess = tryContentProviderWrite(title, content);
+        if (cpSuccess) {
+            addLog("✅ ContentProvider写入成功: " + title);
+            return;
+        }
+        
+        // 尝试静默广播方式
+        boolean broadcastSuccess = trySilentBroadcast(title, content);
+        if (broadcastSuccess) {
+            addLog("✅ 静默广播发送成功: " + title);
+            return;
+        }
+        
+        // 回退到分享方式
+        addLog("⚠️ 静默方式失败，使用分享方式");
+        tryShareWrite(title, content);
+    }
+
+    /**
+     * 尝试使用ContentProvider写入（旧版MIUI）
+     */
+    private boolean tryContentProviderWrite(String title, String content) {
+        try {
+            android.net.Uri uri = android.net.Uri.parse("content://com.miui.notes/note");
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("title", title);
+            values.put("content", content);
+            android.net.Uri result = getContentResolver().insert(uri, values);
+            return result != null;
+        } catch (Exception e) {
+            addLog("ℹ️ ContentProvider不可用: " + e.getMessage());
+            return false;
         }
     }
 
     /**
-     * 尝试静默写入小米笔记
-     * @return 是否成功
+     * 尝试静默广播写入（新版MIUI/澎湃OS）
      */
-    private boolean trySilentWrite(String title, String content) {
+    private boolean trySilentBroadcast(String title, String content) {
         try {
             Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
             intent.setPackage("com.miui.notes");
             intent.putExtra("title", title);
             intent.putExtra("content", content);
             intent.putExtra("silent", true);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             
-            // 使用sendBroadcast发送静默广播
             sendBroadcast(intent);
-            addLog("✅ 已发送静默广播到小米笔记: " + title);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
             addLog("❌ 静默广播失败: " + e.getMessage());
             return false;
         }
