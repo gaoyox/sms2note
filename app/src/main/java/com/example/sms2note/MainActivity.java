@@ -128,7 +128,8 @@ public class MainActivity extends AppCompatActivity {
      * 请求所有必需权限
      */
     private void requestAllPermissions() {
-        addLog("请求必需权限");
+        addLog("🔔 请求必需权限（短信、网络、后台）");
+        Toast.makeText(this, "请授予短信权限以接收验证码", Toast.LENGTH_LONG).show();
         ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_ALL_PERMISSIONS);
     }
 
@@ -149,45 +150,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 写入小米笔记（优先静默广播，失败则回退到分享方式）
+     * 写入小米笔记（使用分享方式，最可靠）
      */
     private void writeToMiNotes(String title, String content) {
-        // 直接尝试静默广播方式（新版MIUI/澎湃OS）
-        boolean broadcastSuccess = trySilentBroadcast(title, content);
-        if (broadcastSuccess) {
-            addLog("✅ 已发送静默广播到小米笔记");
-            return;
-        }
-        
-        // 回退到分享方式
-        addLog("⚠️ 静默方式失败，使用分享方式");
-        tryShareWrite(title, content);
-    }
-
-    /**
-     * 尝试静默广播写入（新版MIUI/澎湃OS）
-     */
-    private boolean trySilentBroadcast(String title, String content) {
-        try {
-            Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
-            intent.setPackage("com.miui.notes");
-            intent.putExtra("title", title);
-            intent.putExtra("content", content);
-            intent.putExtra("silent", true);
-            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            
-            sendBroadcast(intent);
-            return true;
-        } catch (Exception e) {
-            addLog("❌ 静默广播失败: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * 使用分享方式写入小米笔记（回退方案）
-     */
-    private void tryShareWrite(String title, String content) {
         try {
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setPackage("com.miui.notes");
@@ -196,10 +161,11 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra(Intent.EXTRA_TEXT, content);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            addLog("✅ 已打开小米笔记分享界面");
+            addLog("✅ 已打开小米笔记分享界面，请点击保存");
         } catch (Exception e) {
             e.printStackTrace();
-            addLog("❌ 分享方式也失败: " + e.getMessage());
+            addLog("❌ 打开小米笔记失败: " + e.getMessage());
+            Toast.makeText(this, "无法打开小米笔记，请检查是否已安装", Toast.LENGTH_LONG).show();
         }
     }
 
