@@ -57,6 +57,10 @@ public class SmsReceiver extends BroadcastReceiver {
         return VERIFICATION_CODE_PATTERN.matcher(content).find();
     }
 
+    /**
+     * 后台静默写入小米笔记（有标题、不弹App、云同步、浏览器可见）
+     * 适配：MIUI14/15、澎湃OS
+     */
     private void saveToMiNotes(Context context, String sender, String content, long timestamp) {
         try {
             String title = "验证码 - " + (sender != null ? sender : "未知");
@@ -67,18 +71,20 @@ public class SmsReceiver extends BroadcastReceiver {
             String noteContent = "时间：" + timeStr + "\n\n" + content;
 
             try {
-                Intent intent = new Intent(Intent.ACTION_SEND);
+                Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
                 intent.setPackage("com.miui.notes");
-                intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_TITLE, title);
-                intent.putExtra(Intent.EXTRA_TEXT, noteContent);
+                intent.putExtra("title", title);
+                intent.putExtra("content", noteContent);
+                intent.putExtra("silent", true);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(intent);
-                log(context, "已分享到小米笔记");
-                Log.d(TAG, "Verification code shared to MIUI Notes");
+                
+                context.sendBroadcast(intent);
+                log(context, "✅ 已静默写入小米笔记");
+                Log.d(TAG, "Verification code saved silently to MIUI Notes");
             } catch (Exception e) {
-                log(context, "分享到小米笔记失败: " + e.getMessage());
-                Log.e(TAG, "Error sharing to MIUI Notes: " + e.getMessage());
+                log(context, "❌ 静默写入失败: " + e.getMessage());
+                Log.e(TAG, "Error saving to MIUI Notes: " + e.getMessage());
             }
         } catch (Exception e) {
             log(context, "处理验证码异常: " + e.getMessage());

@@ -121,19 +121,25 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "已启用短信转小米笔记", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * 后台静默写入小米笔记（有标题、不弹App、云同步、浏览器可见）
+     * 适配：MIUI14/15、澎湃OS
+     */
     private void writeToMiNotes(String title, String content) {
         try {
-            Intent intent = new Intent(Intent.ACTION_SEND);
+            Intent intent = new Intent("com.miui.notes.action.CREATE_NOTE");
             intent.setPackage("com.miui.notes");
-            intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TITLE, title);
-            intent.putExtra(Intent.EXTRA_TEXT, content);
+            intent.putExtra("title", title);
+            intent.putExtra("content", content);
+            intent.putExtra("silent", true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
-            addLog("已分享到小米笔记");
+            
+            sendBroadcast(intent);
+            addLog("✅ 已静默写入小米笔记");
         } catch (Exception e) {
             e.printStackTrace();
-            addLog("分享到小米笔记失败: " + e.getMessage());
+            addLog("❌ 静默写入失败: " + e.getMessage());
         }
     }
 
